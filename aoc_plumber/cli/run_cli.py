@@ -3,8 +3,49 @@ import html, os, re, requests
 from glob import glob
 from textwrap import dedent
 
-from .parse import Iarg, parse_cmd
+from .parse import Iarg, parse_cmd, pat_to_regex, clean_data
 from .consts import COOKIE_FILE, YEAR, DAY, HOME
+
+def download_day(day: int, year: int, cookie: str, pattern: str = "Day_{day}") -> None:
+    folder = Path(pattern.format(day=day, year=year))
+    os.makedirs(folder, exist_ok=True)
+
+    url = f"https://adventofcode.com/{year}/day/{day}"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.text
+        if not (folder / "test.txt").exists():
+            (folder / "test.txt").write_text(
+                clean_data(data.split("<pre><code>")[1].split("</code></pre>")[0])
+            )
+    else:
+        print(f"Failed to download data from {url}")
+
+    url = f"https://adventofcode.com/{year}/day/{day}/input"
+    response = requests.get(url, cookies={"session": cookie})
+
+    if response.status_code == 200:
+        if not (folder / "input.txt").exists():
+            (folder / "input.txt").write_text(response.text.rstrip())
+    else:
+        print(f"Failed to download data from {url}")
+
+    template = dedent(
+        """\
+    from pathlib import Path
+
+    HOME = Path(__file__).parent
+
+    with open(HOME/"test.txt") as f:
+        pass
+    """
+    )
+
+    for part in range(1, 3):
+        path = folder / f"p{part}.py"
+        if not path.exists():
+            path.write_text(template)
 
 def main():
     args = parse_cmd()
@@ -19,61 +60,6 @@ def main():
     day: Iarg = args.day if args.day is not None else DAY
     PATTERN: str = args.pattern or ("{year}/Day_{day}" if year != YEAR else "Day_{day}")
 
-
-    def pat_to_regex(pattern):
-        escaped_pattern = re.escape(pattern).replace(r"\*", ".*")
-        named_regex_pattern = escaped_pattern.replace(
-            r"\{year\}", r"(?P<year>\d+)"
-        ).replace(r"\{day\}", r"(?P<day>\d+)")
-        return re.compile(named_regex_pattern)
-
-
-    def clean_data(data: str) -> str:
-        return re.sub(r"<.*?>", "", html.unescape(data.removesuffix("\n")))
-
-
-    def download_day(day: int, year: int, pattern: str = "Day_{day}") -> None:
-        folder = Path(pattern.format(day=day, year=year))
-        os.makedirs(folder, exist_ok=True)
-
-        url = f"https://adventofcode.com/{year}/day/{day}"
-        response = requests.get(url)
-
-        if response.status_code == 200:
-            data = response.text
-            if not (folder / "test.txt").exists():
-                (folder / "test.txt").write_text(
-                    clean_data(data.split("<pre><code>")[1].split("</code></pre>")[0])
-                )
-        else:
-            print(f"Failed to download data from {url}")
-
-        url = f"https://adventofcode.com/{year}/day/{day}/input"
-        response = requests.get(url, cookies={"session": COOKIE})
-
-        if response.status_code == 200:
-            if not (folder / "input.txt").exists():
-                (folder / "input.txt").write_text(response.text.rstrip())
-        else:
-            print(f"Failed to download data from {url}")
-
-        template = dedent(
-            """\
-        from pathlib import Path
-
-        HOME = Path(__file__).parent
-
-        with open(HOME/"test.txt") as f:
-            pass
-        """
-        )
-
-        for part in range(1, 3):
-            path = folder / f"p{part}.py"
-            if not path.exists():
-                path.write_text(template)
-
-
     # If match, ignore all else
     if args.match is not None:
         glob_pattern = args.match.replace("{day}", "*").replace("{year}", "*")
@@ -83,7 +69,7 @@ def main():
                 dct = match.groupdict()
                 year = int(dct.get("year", YEAR))
                 day = int(dct.get("day", DAY))
-                download_day(day, year, pattern=folder)
+                download_day(day, year, COOKIE, pattern=folder)
                 print(f"Downloaded Day {day} of {year}")
         exit()
 
@@ -106,5 +92,5 @@ def main():
             if year == YEAR and day > DAY:
                 print(f"Day {day} of {year} has not arrived yet.")
                 break
-            download_day(day, year, pattern=PATTERN)
+            download_day(day, year, COOKIE, pattern=PATTERN)
             print(f"Downloaded Day {day} of {year}")
