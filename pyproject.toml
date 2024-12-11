@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aoc-plumber"
-version = "0.2.0"
+version = "0.2.1"
 description = ""
 authors = ["Alex <noelalexandre66@gmail.com>"]
 readme = "README.md"
