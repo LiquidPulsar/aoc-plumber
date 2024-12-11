@@ -18,12 +18,25 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install dependencies
+        run: pipx install poetry toml
       - uses: actions/setup-python@v5
         with:
           python-version: '${{ matrix.python-version }}'
           cache: 'poetry'
+      - name: Check version match
+        id: check_version
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          PYPROJECT_VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['poetry']['version'])")
+          echo "Tag version: $TAG_VERSION"
+          echo "pyproject.toml version: $PYPROJECT_VERSION"
+          if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
+            echo "Error: Tag version ($TAG_VERSION) does not match pyproject.toml version ($PYPROJECT_VERSION)"
+            exit 1
+          fi
       - run: poetry build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  
