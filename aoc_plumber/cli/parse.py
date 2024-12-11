@@ -5,6 +5,7 @@ from .consts import COOKIE_FILE
 
 type Iarg = int | tuple[int, int]
 
+
 def valid_iarg(value) -> Iarg:
     if value.isdigit():
         return int(value)
@@ -20,6 +21,7 @@ def valid_iarg(value) -> Iarg:
         f"Invalid value: {value}. Must be a positive integer,"
         " two dash-separated positive integers, or 'all'."
     )
+
 
 def parse_cmd() -> Namespace:
     parser = ArgumentParser()
@@ -44,12 +46,14 @@ def parse_cmd() -> Namespace:
     )
     return parser.parse_args()
 
+
 def pat_to_regex(pattern):
-        escaped_pattern = re.escape(pattern).replace(r"\*", ".*")
-        named_regex_pattern = escaped_pattern.replace(
-            r"\{year\}", r"(?P<year>\d+)"
-        ).replace(r"\{day\}", r"(?P<day>\d+)")
-        return re.compile(named_regex_pattern)
+    escaped_pattern = re.escape(pattern).replace(r"\*", ".*")
+    named_regex_pattern = escaped_pattern.replace(
+        r"\{year\}", r"(?P<year>\d+)"
+    ).replace(r"\{day\}", r"(?P<day>\d+)")
+    return re.compile(named_regex_pattern)
+
 
 def clean_data(data: str) -> str:
     return re.sub(r"<.*?>", "", html.unescape(data.removesuffix("\n")))

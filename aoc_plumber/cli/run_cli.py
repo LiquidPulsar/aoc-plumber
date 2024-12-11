@@ -1,10 +1,11 @@
 from pathlib import Path
-import html, os, re, requests
+import os, requests
 from glob import glob
 from textwrap import dedent
 
 from .parse import Iarg, parse_cmd, pat_to_regex, clean_data
 from .consts import COOKIE_FILE, YEAR, DAY, HOME
+
 
 def download_day(day: int, year: int, cookie: str, pattern: str = "Day_{day}") -> None:
     folder = Path(pattern.format(day=day, year=year))
@@ -47,11 +48,14 @@ def download_day(day: int, year: int, cookie: str, pattern: str = "Day_{day}") -
         if not path.exists():
             path.write_text(template)
 
+
 def main():
     args = parse_cmd()
 
     if not args.cookie.exists():
-        print(f"Please create a cookie.txt file in the same directory as this script ({COOKIE_FILE}).")
+        print(
+            f"Please create a cookie.txt file in the same directory as this script ({COOKIE_FILE})."
+        )
         exit()
 
     COOKIE = args.cookie.read_text().strip()
@@ -73,8 +77,9 @@ def main():
                 print(f"Downloaded Day {day} of {year}")
         exit()
 
-
-    def to_list(value: int | tuple[int, int], default: list[int], name: str) -> list[int]:
+    def to_list(
+        value: int | tuple[int, int], default: list[int], name: str
+    ) -> list[int]:
         if isinstance(value, tuple):
             s, e = value
             if s > e:
@@ -82,7 +87,6 @@ def main():
                 exit()
             return list(range(s, e + 1))
         return default if value == -1 else [value]
-
 
     years = to_list(year, list(range(2015, YEAR + 1)), "year")
     days = to_list(day, list(range(1, max(26, DAY + 1))), "day")
