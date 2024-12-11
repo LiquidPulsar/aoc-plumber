@@ -18,12 +18,14 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: pipx install poetry toml
+      - name: Install poetry
+        run: pipx install poetry
       - uses: actions/setup-python@v5
         with:
           python-version: '${{ matrix.python-version }}'
           cache: 'poetry'
+      - name: Install dependencies
+        run: pip install toml
       - name: Check version match
         id: check_version
         run: |
