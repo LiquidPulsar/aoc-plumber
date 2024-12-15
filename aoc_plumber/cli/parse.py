@@ -56,4 +56,4 @@ def pat_to_regex(pattern):
 
 
 def clean_data(data: str) -> str:
-    return re.sub(r"<.*?>", "", html.unescape(data.removesuffix("\n")))
+    return html.unescape(data.removesuffix("\n"))
