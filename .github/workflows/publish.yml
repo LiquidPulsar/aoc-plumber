@@ -7,6 +7,12 @@ on:
 jobs:
   pypi-publish:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/aoc-plumber
+    permissions:
+      id-token: write
+      packages: read
     steps:
       - uses: actions/checkout@v4
 
