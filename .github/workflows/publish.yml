@@ -6,40 +6,29 @@ on:
 
 jobs:
   pypi-publish:
-    name: Publish release to PyPI
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10","3.11","3.12","3.13","3.14"] # TODO: Add more Python versions later
-    environment:
-      name: pypi
-      url: https://pypi.org/p/aoc-plumber
-    permissions:
-      id-token: write
-      packages: read
+    container:
+      image: ghcr.io/astral-sh/uv:latest  # uv + CPython preinstalled
     steps:
       - uses: actions/checkout@v4
-      - name: Install poetry
-        run: pipx install poetry
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '${{ matrix.python-version }}'
-          cache: 'poetry'
-      - name: Install dependencies
-        run: pip install toml
+
+      # 3.10 is the minimum supported version for this project
+      - name: Ensure Python 3.10 is installed
+        run: uv python install 3.10
+
       - name: Check version match
-        id: check_version
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/}
-          PYPROJECT_VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['poetry']['version'])")
-          echo "Tag version: $TAG_VERSION"
-          echo "pyproject.toml version: $PYPROJECT_VERSION"
+          PYPROJECT_VERSION=$(uv run --python 3.10 python -c \
+            "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+
           if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
-            echo "Error: Tag version ($TAG_VERSION) does not match pyproject.toml version ($PYPROJECT_VERSION)"
+            echo "Tag version does not match"
             exit 1
           fi
-      - run: poetry build
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
 
-  
+      - name: Build
+        run: uv build --python 3.10
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
