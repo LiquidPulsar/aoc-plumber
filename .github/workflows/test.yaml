@@ -16,18 +16,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Install uv
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
-      # Install Python
       - name: Install Python
         run: uv python install ${{ matrix.python-version }}
 
-      # Install dependencies (from pyproject.toml)
-      - name: Install package and dependencies
-        run: uv pip install --system --editable . 
+      - name: Init venv
+        run: uv venv
 
-      # Run tests
+      - name: Install package and dependencies
+        run: uv pip install --editable .
+
       - name: Run tests
         run: uv run pytest
