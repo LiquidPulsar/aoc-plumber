@@ -2,7 +2,7 @@ from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 import html, re
 
-from loguru import logger
+from .logger import logger
 from .consts import COOKIE_FILE, FILE_TEMPLATE, IARG_EMPTY
 
 type Iarg = int | tuple[int, int]

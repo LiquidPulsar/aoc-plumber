@@ -5,7 +5,7 @@ from glob import glob
 
 from .parse import Iarg, parse_cmd, pat_to_regex, clean_data
 from .consts import COOKIE_FILE, IARG_EMPTY, MONTH, YEAR, DAY, START_YEAR
-from loguru import logger
+from .logger import logger
 
 
 def download_day(
