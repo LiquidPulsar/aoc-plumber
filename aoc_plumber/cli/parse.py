@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 import html, re
-from .consts import COOKIE_FILE
+from .consts import COOKIE_FILE, FILE_TEMPLATE, IARG_EMPTY
 
 type Iarg = int | tuple[int, int]
 
@@ -10,7 +10,7 @@ def valid_iarg(value) -> Iarg:
     if value.isdigit():
         return int(value)
     if value == "all":
-        return -1
+        return IARG_EMPTY
     if (
         "-" in value
         and len(parts := value.split("-")) == 2
@@ -21,7 +21,6 @@ def valid_iarg(value) -> Iarg:
         f"Invalid value: {value}. Must be a positive integer,"
         " two dash-separated positive integers, or 'all'."
     )
-
 
 def parse_cmd() -> Namespace:
     parser = ArgumentParser()
@@ -44,10 +43,32 @@ def parse_cmd() -> Namespace:
         default=None,
         help="Match folder structure and fill days that have no data",
     )
+    parser.add_argument(
+        "--write-cookie",
+        type=str,
+        default=None,
+        help="Write a new cookie string to the cookie file",
+    )
+    parser.add_argument(
+        "-f",
+        "--files",
+        type=str,
+        nargs="+",
+        default=("p1.py", "p2.py"),
+        help="Specify filenames",
+    )
+    parser.add_argument(
+        "-t",
+        "--template",
+        type=str,
+        default=FILE_TEMPLATE,
+        help="The template to use for new problem files",
+    )
+    
     return parser.parse_args()
 
 
-def pat_to_regex(pattern):
+def pat_to_regex(pattern):# -> Pattern[Any]:
     escaped_pattern = re.escape(pattern).replace(r"\*", ".*")
     named_regex_pattern = escaped_pattern.replace(
         r"\{year\}", r"(?P<year>\d+)"

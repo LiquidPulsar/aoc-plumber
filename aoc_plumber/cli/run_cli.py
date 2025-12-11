@@ -1,59 +1,73 @@
 from pathlib import Path
 import os, requests
+import re
 from glob import glob
-from textwrap import dedent
 
 from .parse import Iarg, parse_cmd, pat_to_regex, clean_data
-from .consts import COOKIE_FILE, YEAR, DAY, HOME
+from .consts import COOKIE_FILE, IARG_EMPTY, MONTH, YEAR, DAY, START_YEAR
+from loguru import logger
 
 
-def download_day(day: int, year: int, cookie: str, pattern: str = "Day_{day}") -> None:
+def download_day(
+    day: int,
+    year: int,
+    cookie: str,
+    pattern: str,
+    files: tuple[str, ...],
+    file_pattern: str,
+) -> None:
     folder = Path(pattern.format(day=day, year=year))
+    logger.info(f"Downloading data for Day {day} of {year} into folder: {folder}")
+    logger.debug(f"Target folder: {folder.absolute()}")
     os.makedirs(folder, exist_ok=True)
 
     url = f"https://adventofcode.com/{year}/day/{day}"
     response = requests.get(url)
-
+    logger.debug(f"Request to {url} returned status code {response.status_code}")
     if response.status_code == 200:
         data = response.text
         if not (folder / "test.txt").exists():
             (folder / "test.txt").write_text(
-                clean_data(data.split("<pre><code>")[1].split("</code></pre>")[0])
+                clean_data(
+                    data.split("<pre><code>", maxsplit=1)[1].split(
+                        "</code></pre>", maxsplit=1
+                    )[0]
+                )
             )
     else:
-        print(f"Failed to download data from {url}")
+        logger.warning(
+            f"Failed to download test data from {url}. This can happen if the day contains weird test data."
+        )
 
-    url = f"https://adventofcode.com/{year}/day/{day}/input"
+    url += "/input"
     response = requests.get(url, cookies={"session": cookie})
+    logger.debug(f"Request to {url} returned status code {response.status_code}")
 
     if response.status_code == 200:
         if not (folder / "input.txt").exists():
             (folder / "input.txt").write_text(response.text.rstrip())
     else:
-        print(f"Failed to download data from {url}")
+        logger.error(
+            f"Failed to download data from {url}. This usually means the cookie is invalid."
+        )
 
-    template = dedent(
-        """\
-    from pathlib import Path
-
-    HOME = Path(__file__).parent
-
-    with open(HOME/"test.txt") as f:
-        pass
-    """
-    )
-
-    for part in range(1, 3):
-        path = folder / f"p{part}.py"
+    for file in filter(None, files):  # Skip empty filenames
+        path = folder / file
         if not path.exists():
-            path.write_text(template)
+            logger.debug(f"Creating file: {path}")
+            path.write_text(file_pattern)
 
 
 def main():
     args = parse_cmd()
 
+    if args.write_cookie is not None:
+        COOKIE_FILE.write_text(args.write_cookie.strip())
+        logger.success(f"Wrote new cookie to {COOKIE_FILE}")
+        exit()
+
     if not args.cookie.exists():
-        print(
+        logger.error(
             f"Please create a cookie.txt file in the same directory as this script ({COOKIE_FILE})."
         )
         exit()
@@ -63,18 +77,32 @@ def main():
     year: Iarg = args.year if args.year is not None else YEAR
     day: Iarg = args.day if args.day is not None else DAY
     PATTERN: str = args.pattern or ("{year}/Day_{day}" if year != YEAR else "Day_{day}")
+    FILES: tuple[str, ...] = tuple(args.files)
+    file_pattern: str = args.template
+    logger.debug(f"year={year}, day={day}, pattern={PATTERN}, files={FILES}, template={file_pattern.replace('\n', '\\n')}")
 
     # If match, ignore all else
     if args.match is not None:
-        glob_pattern = args.match.replace("{day}", "*").replace("{year}", "*")
+        glob_pattern = re.sub(r"\{.*\}", "*", args.match)
         compiled_pattern = pat_to_regex(args.match)
-        for folder in glob(glob_pattern, root_dir=HOME):
+        logger.info(
+            f"Matching folders with pattern: {args.match} -> {compiled_pattern.pattern}"
+        )
+        for folder in glob(glob_pattern):
+            logger.info(f"Checking folder: {folder}")
             if match := compiled_pattern.match(folder):
                 dct = match.groupdict()
                 year = int(dct.get("year", YEAR))
                 day = int(dct.get("day", DAY))
-                download_day(day, year, COOKIE, pattern=folder)
-                print(f"Downloaded Day {day} of {year}")
+                download_day(
+                    day,
+                    year,
+                    COOKIE,
+                    pattern=folder,
+                    files=FILES,
+                    file_pattern=file_pattern,
+                )
+                logger.info(f"Downloaded Day {day} of {year}")
         exit()
 
     def to_list(
@@ -86,15 +114,25 @@ def main():
                 print(f"Invalid {name} range {s}-{e}")
                 exit()
             return list(range(s, e + 1))
-        return default if value == -1 else [value]
+        return default if value == IARG_EMPTY else [value]
 
-    years = to_list(year, list(range(2015, YEAR + 1)), "year")
+    years = to_list(year, list(range(START_YEAR, YEAR + 1)), "year")
     days = to_list(day, list(range(1, max(26, DAY + 1))), "day")
 
     for year in years:
+        if year < START_YEAR or year > YEAR:
+            logger.warning(f"Year {year} is out of valid range ({START_YEAR}-{YEAR})")
+            continue
         for day in days:
-            if year == YEAR and day > DAY:
-                print(f"Day {day} of {year} has not arrived yet.")
+            if year == YEAR and MONTH == 12 and day > DAY:
+                logger.warning(f"Day {day} of this year ({year}) has not arrived yet.")
                 break
-            download_day(day, year, COOKIE, pattern=PATTERN)
-            print(f"Downloaded Day {day} of {year}")
+            download_day(
+                day,
+                year,
+                COOKIE,
+                pattern=PATTERN,
+                files=FILES,
+                file_pattern=file_pattern,
+            )
+            logger.info(f"Downloaded Day {day} of {year}")
