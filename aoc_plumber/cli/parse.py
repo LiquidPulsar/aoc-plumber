@@ -2,40 +2,39 @@ from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 import html, re
 
+from .config import load_all_configs
+from .utils import Iarg, parse_iarg
 from .logger import logger
-from .consts import COOKIE_FILE, FILE_TEMPLATE, IARG_EMPTY
-
-type Iarg = int | tuple[int, int]
 
 
 def valid_iarg(value) -> Iarg:
-    if value.isdigit():
-        return int(value)
-    if value == "all":
-        return IARG_EMPTY
-    if (
-        "-" in value
-        and len(parts := value.split("-")) == 2
-        and all(map(str.isdigit, parts))
-    ):
-        return tuple(map(int, parts))  # type: ignore
-    raise ArgumentTypeError(
-        f"Invalid value: {value}. Must be a positive integer,"
-        " two dash-separated positive integers, or 'all'."
-    )
+    res = parse_iarg(value)
+    if res is None:
+        raise ArgumentTypeError(
+            f"Invalid value: {value}. Must be a positive integer,"
+            " two dash-separated positive integers, or 'all'."
+        )
+    return res
+
 
 def parse_cmd() -> Namespace:
+    defaults = load_all_configs()
+
     parser = ArgumentParser()
-    parser.add_argument("-d", "--day", type=valid_iarg, default=None, help="The day")
-    parser.add_argument("-y", "--year", type=valid_iarg, default=None, help="The year")
     parser.add_argument(
-        "-c", "--cookie", type=Path, default=COOKIE_FILE, help="The cookie file"
+        "-d", "--day", type=valid_iarg, default=defaults.day, help="The day"
+    )
+    parser.add_argument(
+        "-y", "--year", type=valid_iarg, default=defaults.year, help="The year"
+    )
+    parser.add_argument(
+        "-c", "--cookie", type=Path, default=defaults.cookie, help="The cookie file"
     )
     parser.add_argument(
         "-p",
         "--pattern",
         type=str,
-        default=None,
+        default=defaults.pattern,
         help="The pattern to use for the folder name",
     )
     parser.add_argument(
@@ -56,26 +55,24 @@ def parse_cmd() -> Namespace:
         "--files",
         type=str,
         nargs="+",
-        default=("p1.py", "p2.py"),
+        default=defaults.files,
         help="Specify filenames",
     )
     parser.add_argument(
         "-t",
         "--template",
         type=str,
-        default=FILE_TEMPLATE,
+        default=defaults.template,
         help="The template to use for new problem files",
     )
-    
+
     return parser.parse_args()
 
 
 def pat_to_regex(pattern) -> re.Pattern:
     escaped_pattern = re.escape(pattern).replace(r"\*", ".*")
     logger.debug(f"Escaped pattern: {pattern} -> {escaped_pattern}")
-    named_regex_pattern = re.sub(
-        r"\\\{(\w+).*\\\}", r"(?P<\1>\\d+)", escaped_pattern
-    )
+    named_regex_pattern = re.sub(r"\\\{(\w+).*\\\}", r"(?P<\1>\\d+)", escaped_pattern)
     logger.debug(f"Converted pattern: {pattern} -> {named_regex_pattern}")
     return re.compile(named_regex_pattern)
 

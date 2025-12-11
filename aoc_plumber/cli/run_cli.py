@@ -4,7 +4,7 @@ import re
 from glob import glob
 
 from .parse import Iarg, parse_cmd, pat_to_regex, clean_data
-from .consts import COOKIE_FILE, IARG_EMPTY, MONTH, YEAR, DAY, START_YEAR
+from .consts import IARG_EMPTY, MONTH, YEAR, DAY, START_YEAR
 from .logger import logger
 
 
@@ -62,13 +62,15 @@ def main():
     args = parse_cmd()
 
     if args.write_cookie is not None:
-        COOKIE_FILE.write_text(args.write_cookie.strip())
-        logger.success(f"Wrote new cookie to {COOKIE_FILE}")
+        args.cookie.write_text(args.write_cookie.strip())
+        logger.success(f"Wrote new cookie to {args.cookie}")
         exit()
 
     if not args.cookie.exists():
         logger.error(
-            f"Please create a cookie.txt file in the same directory as this script ({COOKIE_FILE})."
+            f"Please create a cookie.txt file in the following location ({args.cookie.absolute()})."
+            " You can get your session cookie from your browser's developer tools while logged into Advent of Code."
+            " Alternatively, you can use the --write-cookie argument with said cookie string to create it."
         )
         exit()
 
@@ -79,7 +81,10 @@ def main():
     PATTERN: str = args.pattern or ("{year}/Day_{day}" if year != YEAR else "Day_{day}")
     FILES: tuple[str, ...] = tuple(args.files)
     file_pattern: str = args.template
-    logger.debug(f"year={year}, day={day}, pattern={PATTERN}, files={FILES}, template={file_pattern.replace('\n', '\\n')}")
+    template_short = file_pattern.replace("\n", "\\n")
+    logger.debug(
+        f"year={year}, day={day}, pattern={PATTERN}, files={FILES}, template={template_short}"
+    )
 
     # If match, ignore all else
     if args.match is not None:
