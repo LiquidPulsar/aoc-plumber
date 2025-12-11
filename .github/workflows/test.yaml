@@ -11,15 +11,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.13"] # TODO: Add more Python versions later
+        python-version: ["3.10"] # add more versions
 
     steps:
-        - uses: actions/checkout@v4
-        - name: Install poetry
-          run: pipx install poetry
-        - uses: actions/setup-python@v5
-          with:
-            python-version: '${{ matrix.python-version }}'
-            cache: 'poetry'
-        - run: poetry install
-        - run: poetry run pytest
+      - uses: actions/checkout@v4
+
+      # Install uv
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      # Install Python
+      - name: Install Python
+        run: uv python install ${{ matrix.python-version }}
+
+      # Install dependencies (from pyproject.toml)
+      - name: Install package and dependencies
+        run: uv pip install --editable .
+
+      # Run tests
+      - name: Run tests
+        run: uv run pytest
