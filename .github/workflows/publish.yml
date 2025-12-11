@@ -23,6 +23,9 @@ jobs:
       - name: Ensure Python 3.10 is installed
         run: uv python install 3.10
 
+      - name: Install tomli
+        run: uv run --python 3.10 pip install tomli
+
       - name: Check version match
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/}
