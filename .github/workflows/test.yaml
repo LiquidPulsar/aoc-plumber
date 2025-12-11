@@ -26,7 +26,7 @@ jobs:
 
       # Install dependencies (from pyproject.toml)
       - name: Install package and dependencies
-        run: uv pip install --editable .
+        run: uv pip install --system --editable . 
 
       # Run tests
       - name: Run tests
