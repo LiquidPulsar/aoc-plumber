@@ -3,15 +3,15 @@ name: Upload Python Package to PyPI when a Release is Created
 on:
   release:
     types: [created]
-  workflow_dispatch:
 
 jobs:
   pypi-publish:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/astral-sh/uv:latest  # uv + CPython preinstalled
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       # 3.10 is the minimum supported version for this project
       - name: Ensure Python 3.10 is installed
