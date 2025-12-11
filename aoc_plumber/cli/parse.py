@@ -1,6 +1,8 @@
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 import html, re
+
+from loguru import logger
 from .consts import COOKIE_FILE, FILE_TEMPLATE, IARG_EMPTY
 
 type Iarg = int | tuple[int, int]
@@ -68,11 +70,13 @@ def parse_cmd() -> Namespace:
     return parser.parse_args()
 
 
-def pat_to_regex(pattern):# -> Pattern[Any]:
+def pat_to_regex(pattern) -> re.Pattern:
     escaped_pattern = re.escape(pattern).replace(r"\*", ".*")
-    named_regex_pattern = escaped_pattern.replace(
-        r"\{year\}", r"(?P<year>\d+)"
-    ).replace(r"\{day\}", r"(?P<day>\d+)")
+    logger.debug(f"Escaped pattern: {pattern} -> {escaped_pattern}")
+    named_regex_pattern = re.sub(
+        r"\\\{(\w+).*\\\}", r"(?P<\1>\\d+)", escaped_pattern
+    )
+    logger.debug(f"Converted pattern: {pattern} -> {named_regex_pattern}")
     return re.compile(named_regex_pattern)
 
 
