@@ -21,7 +21,7 @@ jobs:
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/}
           PYPROJECT_VERSION=$(uv run --python 3.10 python -c \
-            "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+            "import tomli; print(tomli.load(open('pyproject.toml','rb'))['project']['version'])")
 
           if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
             echo "Tag version does not match"
