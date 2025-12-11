@@ -1,5 +1,6 @@
 from pathlib import Path
-import os, requests
+import os
+import requests
 import re
 from glob import glob
 

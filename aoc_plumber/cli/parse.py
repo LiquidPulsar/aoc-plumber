@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
-import html, re
+import html
+import re
 
 from .config import load_all_configs
 from .utils import Iarg, parse_iarg

@@ -1,8 +1,6 @@
 from pathlib import Path
-import tomllib
+import tomli
 from typing import Any, Iterable, overload, Literal
-
-from aoc_plumber.cli.utils import Iarg, parse_iarg
 
 from .logger import logger
 from .consts import HOME
@@ -26,7 +24,7 @@ def load_config(path: Path, err_fatal: bool = False) -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
-        data = tomllib.loads(path.read_text())
+        data = tomli.loads(path.read_text())
         logger.debug(f"Loaded config from {path}")
         return data
     except Exception as e:
