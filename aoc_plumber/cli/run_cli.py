@@ -28,12 +28,18 @@ def download_day(
     if response.status_code == 200:
         data = response.text
         if not (folder / "test.txt").exists():
-            (folder / "test.txt").write_text(
-                clean_data(
+            try:
+                data = clean_data(
                     data.split("<pre><code>", maxsplit=1)[1].split(
                         "</code></pre>", maxsplit=1
                     )[0]
                 )
+            except IndexError as e:
+                logger.warning(
+                    f"Failed to extract test data from HTML for Day {day} of {year}: {e}"
+                )
+            (folder / "test.txt").write_text(
+                data
             )
     else:
         logger.warning(
